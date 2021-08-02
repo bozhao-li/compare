@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module WriteBuffer(
+module WriteBuffer_8bank(
     input wire clk,
     input wire rst,
     input wire duncache_i,  
@@ -28,33 +28,33 @@ module WriteBuffer(
     
     
     input wire wreq_i,          //CPU write
-(*keep = "true"*)    input wire [31:0] waddr_i,
-    input wire [127:0] wdata_i, 
-    input wire [3:0] wsel,
+    input wire [31:0] waddr_i,
+    input wire [255:0] wdata_i, 
+    input wire [7:0] wsel,
     output wire whit_o, 
     
     input wire rreq_i,          //CPU read
     input wire [31:0] raddr_i,
     output wire rhit_o,
-    output reg [127:0] rdata_o,
-(*keep = "true"*)    output wire [1:0] state_o,// {state_full, state_working}
+    output reg [255:0] rdata_o,
+    output wire [1:0] state_o,// {state_full, state_working}
     
     
     input wire AXI_valid_i,     //write into AXI 
     output wire AXI_wen_o,
-    output wire [127:0] AXI_wdata_o,
+    output wire [255:0] AXI_wdata_o,
     output wire [31:0] AXI_waddr_o 
     );
-    wire [127:0] wsel_expand;
-    assign wsel_expand = {{32{wsel[3]}} , {32{wsel[2]}} , {32{wsel[1]}} , {32{wsel[0]}}};
+    wire [255:0] wsel_expand;
+    assign wsel_expand = {{32{wsel[7]}} , {32{wsel[6]}} , {32{wsel[5]}} , {32{wsel[4]}}, {32{wsel[3]}} , {32{wsel[2]}} , {32{wsel[1]}} , {32{wsel[0]}}};
     //address aligning
-    wire [31:0] waddr_align = {waddr_i[31:4], 4'b0};
-    wire [31:0] raddr_align = {raddr_i[31:4], 4'b0};
+    wire [31:0] waddr_align = {waddr_i[31:5], 5'b0};
+    wire [31:0] raddr_align = {raddr_i[31:5], 5'b0};
     
     //FIFO
-(*keep = "true"*)    reg [127:0] FIFO_data;
-(*keep = "true"*)    reg [31:0]  FIFO_addr;
- (*keep = "true"*)   reg FIFO_valid;
+    reg [255:0] FIFO_data;
+    reg [31:0]  FIFO_addr;
+    reg FIFO_valid;
     
     wire write_hit_head;
     
@@ -103,13 +103,13 @@ module WriteBuffer(
         if(rreq_i && rhit_o) begin
             rdata_o = FIFO_data; 
         end else begin
-            rdata_o = 128'b0;
+            rdata_o = 256'b0;
         end
     end
     
 
     //write into AXI
-(*keep = "true"*)    assign AXI_wen_o = (state_o == 2'b00) ? 1'b0 : 
+    assign AXI_wen_o = (state_o == 2'b00) ? 1'b0 : 
                         (AXI_valid_i && judge == 2'b10)? 1'b0 : 
                         1'b1;
     assign AXI_wdata_o = FIFO_data;
